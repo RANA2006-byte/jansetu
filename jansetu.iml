@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <!-- Compiled .class files go here -->
+    <output url="file://$MODULE_DIR$/backend/out" />
+    <exclude-output />
+
+    <content url="file://$MODULE_DIR$/backend/src">
+      <!-- Java source root — IntelliJ reads all .java files from here -->
+      <sourceFolder url="file://$MODULE_DIR$/backend/src" isTestSource="false" />
+    </content>
+
+    <!-- JDK dependency -->
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+
+    <!-- MySQL JDBC driver JAR — this is what fixes "Cannot resolve symbol DriverManager" -->
+    <orderEntry type="module-library">
+      <library name="mysql-connector-j-26.10.0">
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/backend/lib/mysql-connector-j-26.10.0.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+
+  </component>
+</module>
