@@ -3,11 +3,10 @@
 :: run.bat — Compile and run Jansetu backend (Windows)
 ::
 :: Usage:
-::   Double-click this file, OR
-::   Open Command Prompt in backend\ and type: run.bat
-::
-:: To test DBConnection only:
-::   run.bat db
+::   run.bat          -> Starts Jansetu HTTP API Server (port 8080)
+::   run.bat server   -> Starts Jansetu HTTP API Server (port 8080)
+::   run.bat db       -> Runs DBConnection test
+::   run.bat main     -> Runs Main test
 :: ============================================================
 
 set JAR=lib\mysql-connector-j-26.10.0.jar
@@ -19,12 +18,12 @@ if not exist %OUT% mkdir %OUT%
 
 echo Compiling all Java files...
 javac -cp "%JAR%" -sourcepath "%SRC%" -d "%OUT%" ^
-  "%SRC%\model\User.java" ^
-  "%SRC%\model\Scheme.java" ^
-  "%SRC%\util\DBConnection.java" ^
-  "%SRC%\dao\UserDAO.java" ^
-  "%SRC%\dao\SchemeDAO.java" ^
-  "%SRC%\service\RecommendationService.java" ^
+  "%SRC%\model\*.java" ^
+  "%SRC%\auth\*.java" ^
+  "%SRC%\dao\*.java" ^
+  "%SRC%\service\*.java" ^
+  "%SRC%\util\*.java" ^
+  "%SRC%\server\*.java" ^
   "%SRC%\Main.java"
 
 if %ERRORLEVEL% NEQ 0 (
@@ -41,9 +40,12 @@ echo.
 if "%1"=="db" (
     echo Running DBConnection test...
     java -cp "%OUT%;%JAR%" util.DBConnection
-) else (
+) else if "%1"=="main" (
     echo Running Main...
     java -cp "%OUT%;%JAR%" Main
+) else (
+    echo Starting Jansetu API Server on http://localhost:8080...
+    java -cp "%OUT%;%JAR%" server.JansetuServer
 )
 
 pause

@@ -13,13 +13,15 @@ public class Scheme {
     private String description;
     private int minAge;
     private int maxAge;
-    private String profession;    // e.g. "Farmer", "Student", "Any"
-    private String state;         // e.g. "Maharashtra", "All" (for central schemes)
-    private double incomeLimit;   // annual income limit in rupees; 0 = no limit
+    private String profession; // e.g. "Farmer", "Student", "Any"
+    private String state; // e.g. "Maharashtra", "All" (for central schemes)
+    private double incomeLimit; // annual income limit in rupees; 0 = no limit
     private String educationLevel; // e.g. "10th Pass", "Graduate", "Any"
-    private String category;      // e.g. "Agriculture", "Education", "Health"
-    private String benefits;      // short description of what the scheme offers
+    private String category; // e.g. "Agriculture", "Education", "Health"
+    private String benefits; // short description of what the scheme offers
     private String applicationLink; // official URL to apply
+    private String eligibleGender;
+    private String eligibleMaritalStatus;
 
     // --------------------------------------------------------
     // Default constructor
@@ -31,9 +33,9 @@ public class Scheme {
     // Parameterized constructor
     // --------------------------------------------------------
     public Scheme(int schemeId, String schemeName, String description,
-                  int minAge, int maxAge, String profession, String state,
-                  double incomeLimit, String educationLevel, String category,
-                  String benefits, String applicationLink) {
+            int minAge, int maxAge, String profession, String state,
+            double incomeLimit, String educationLevel, String category,
+            String benefits, String applicationLink) {
         this.schemeId = schemeId;
         this.schemeName = schemeName;
         this.description = description;
@@ -97,6 +99,22 @@ public class Scheme {
 
     public String getApplicationLink() {
         return applicationLink;
+    }
+
+    public String getEligibleGender() {
+        return eligibleGender;
+    }
+
+    public void setEligibleGender(String eligibleGender) {
+        this.eligibleGender = eligibleGender;
+    }
+
+    public String getEligibleMaritalStatus() {
+        return eligibleMaritalStatus;
+    }
+
+    public void setEligibleMaritalStatus(String eligibleMaritalStatus) {
+        this.eligibleMaritalStatus = eligibleMaritalStatus;
     }
 
     // --------------------------------------------------------

@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Jansetu – Discover government schemes that match your eligibility." />
+  <title>Jansetu – Bridging Citizens to Government Benefits</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- =========================================================
+       NAVIGATION BAR
+       ========================================================= -->
+  <nav class="navbar" id="navbar">
+    <div class="container nav-container">
+
+      <!-- Logo -->
+      <a href="#home" class="nav-logo">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+          <rect width="34" height="34" rx="9" fill="#F97316"/>
+          <path d="M6 24 Q17 13 28 24" stroke="white" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+          <circle cx="17" cy="12" r="3.2" fill="white"/>
+          <rect x="8"  y="24.5" width="4" height="4" rx="1.5" fill="white" opacity="0.85"/>
+          <rect x="22" y="24.5" width="4" height="4" rx="1.5" fill="white" opacity="0.85"/>
+        </svg>
+        <span class="logo-text">JANSETU</span>
+      </a>
+
+      <!-- Desktop nav links -->
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#home"    class="nav-link">Home</a></li>
+        <li><a href="#schemes" class="nav-link">Explore Schemes</a></li>
+        <li><a href="#about"   class="nav-link">About</a></li>
+      </ul>
+
+      <!-- Right side: auth-aware buttons -->
+      <div class="nav-actions">
+        <!-- Shown when LOGGED OUT -->
+        <div class="nav-guest" id="navGuest">
+          <button class="btn btn-outline nav-btn-sm" id="navLoginBtn">Login</button>
+          <a href="#find" class="btn btn-primary nav-cta">Find Schemes</a>
+        </div>
+
+        <!-- Shown when LOGGED IN (hidden by default) -->
+        <div class="nav-user hidden" id="navUser">
+          <a href="#find" class="btn btn-primary nav-cta">Find Schemes</a>
+          <div class="profile-menu-wrapper" id="profileMenuWrapper">
+            <button class="profile-btn" id="profileBtn" aria-label="Account menu" aria-expanded="false">
+              <span class="profile-avatar" id="profileAvatar">?</span>
+              <span class="profile-name" id="profileName">Account</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="profile-dropdown" id="profileDropdown">
+              <div class="profile-dropdown-info">
+                <span class="profile-dropdown-name"  id="dropdownName"></span>
+                <span class="profile-dropdown-email" id="dropdownEmail"></span>
+              </div>
+              <div class="profile-dropdown-divider"></div>
+              <button class="profile-dropdown-item logout-item" id="logoutBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hamburger (mobile) -->
+        <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile dropdown menu -->
+    <div class="mobile-menu" id="mobileMenu">
+      <ul>
+        <li><a href="#home"    class="mobile-nav-link">Home</a></li>
+        <li><a href="#schemes" class="mobile-nav-link">Explore Schemes</a></li>
+        <li><a href="#about"   class="mobile-nav-link">About</a></li>
+        <li id="mobileLoginItem"><button class="btn btn-outline mobile-nav-link mobile-login-btn" id="mobileLoginBtn" style="width:100%;margin-top:4px;">Login</button></li>
+        <li><a href="#find" class="btn btn-primary mobile-nav-link" style="display:block;text-align:center;margin-top:4px;">Find Schemes</a></li>
+        <!-- Mobile logout (hidden until logged in) -->
+        <li class="hidden" id="mobileLogoutItem">
+          <button class="btn btn-ghost mobile-nav-link mobile-logout-btn" id="mobileLogoutBtn" style="width:100%;color:#dc2626;margin-top:4px;">Logout</button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- =========================================================
+       AUTH MODAL OVERLAY
+       Single overlay that shows either Login or Register panel.
+       ========================================================= -->
+  <div class="modal-overlay hidden" id="authModal" role="dialog" aria-modal="true" aria-label="Authentication">
+    <div class="modal-card" id="modalCard">
+
+      <!-- CLOSE BUTTON -->
+      <button class="modal-close" id="modalClose" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <!-- Modal header with logo -->
+      <div class="modal-header">
+        <div class="modal-logo">
+          <svg width="28" height="28" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+            <rect width="34" height="34" rx="9" fill="#F97316"/>
+            <path d="M6 24 Q17 13 28 24" stroke="white" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+            <circle cx="17" cy="12" r="3.2" fill="white"/>
+            <rect x="8"  y="24.5" width="4" height="4" rx="1.5" fill="white" opacity="0.85"/>
+            <rect x="22" y="24.5" width="4" height="4" rx="1.5" fill="white" opacity="0.85"/>
+          </svg>
+          <span>JANSETU</span>
+        </div>
+      </div>
+
+      <!-- ===== LOGIN PANEL ===== -->
+      <div id="loginPanel">
+        <h2 class="modal-title">Welcome back</h2>
+        <p  class="modal-subtitle">Sign in to find schemes tailored for you</p>
+
+        <!-- Alert boxes (success / error) -->
+        <div class="auth-alert auth-alert-error  hidden" id="loginError"></div>
+
+        <form id="loginForm" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="loginEmail">Email Address <span class="required">*</span></label>
+            <input class="form-input" type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" />
+            <span class="field-error" id="loginEmailError" role="alert"></span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">Password <span class="required">*</span></label>
+            <div class="password-wrapper">
+              <input class="form-input" type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" />
+              <button type="button" class="password-toggle" data-target="loginPassword" aria-label="Toggle password visibility">
+                <!-- Eye icon — toggled by JS -->
+                <svg class="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-hide hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+            <span class="field-error" id="loginPasswordError" role="alert"></span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="loginSubmitBtn">
+            Sign In
+          </button>
+        </form>
+
+        <p class="modal-switch">
+          Don't have an account?
+          <button class="link-btn" id="switchToRegister">Create one</button>
+        </p>
+      </div>
+
+      <!-- ===== REGISTER PANEL ===== -->
+      <div class="hidden" id="registerPanel">
+        <h2 class="modal-title">Create your account</h2>
+        <p  class="modal-subtitle">Join Jansetu to get personalised scheme recommendations</p>
+
+        <div class="auth-alert auth-alert-success hidden" id="registerSuccess"></div>
+        <div class="auth-alert auth-alert-error   hidden" id="registerError"></div>
+
+        <form id="registerForm" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="regName">Full Name <span class="required">*</span></label>
+            <input class="form-input" type="text" id="regName" placeholder="e.g. Ravi Kumar" autocomplete="name" />
+            <span class="field-error" id="regNameError" role="alert"></span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="regEmail">Email Address <span class="required">*</span></label>
+            <input class="form-input" type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" />
+            <span class="field-error" id="regEmailError" role="alert"></span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="regPassword">Password <span class="required">*</span></label>
+            <div class="password-wrapper">
+              <input class="form-input" type="password" id="regPassword" placeholder="Min 8 characters" autocomplete="new-password" />
+              <button type="button" class="password-toggle" data-target="regPassword" aria-label="Toggle password visibility">
+                <svg class="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-hide hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+            <span class="field-hint">Use at least 8 characters.</span>
+            <span class="field-error" id="regPasswordError" role="alert"></span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="regConfirm">Confirm Password <span class="required">*</span></label>
+            <div class="password-wrapper">
+              <input class="form-input" type="password" id="regConfirm" placeholder="Re-enter password" autocomplete="new-password" />
+              <button type="button" class="password-toggle" data-target="regConfirm" aria-label="Toggle password visibility">
+                <svg class="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-hide hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+            <span class="field-error" id="regConfirmError" role="alert"></span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="registerSubmitBtn">
+            Create Account
+          </button>
+        </form>
+
+        <p class="modal-switch">
+          Already have an account?
+          <button class="link-btn" id="switchToLogin">Sign in</button>
+        </p>
+      </div>
+
+    </div><!-- /modal-card -->
+  </div><!-- /modal-overlay -->
+
+  <main>
+
+    <!-- =========================================================
+         HERO SECTION
+         ========================================================= -->
+    <section id="home" class="hero-section">
+      <div class="container hero-container">
+
+        <div class="hero-content">
+          <div class="hero-badge"><span>🇮🇳</span><span>Official Government Welfare Portal</span></div>
+          <h1 class="hero-title">Government Schemes,<br><span class="text-orange">Made Accessible.</span></h1>
+          <p class="hero-desc">Discover government schemes and benefits that match your eligibility. Answer a few simple questions and find opportunities designed for you.</p>
+          <div class="hero-actions">
+            <a href="#find" class="btn btn-primary btn-lg">
+              Find Eligible Schemes
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+            <a href="#schemes" class="btn btn-outline btn-lg">Explore Schemes</a>
+          </div>
+          <div class="trust-indicators">
+            <div class="trust-item">
+              <span class="trust-icon">📋</span>
+              <div class="trust-text"><strong>8+ Available Schemes</strong><span>Central &amp; State level</span></div>
+            </div>
+            <div class="trust-item">
+              <span class="trust-icon">🎯</span>
+              <div class="trust-text"><strong>Personalized Recommendations</strong><span>Based on your profile</span></div>
+            </div>
+            <div class="trust-item">
+              <span class="trust-icon">✅</span>
+              <div class="trust-text"><strong>Simple Eligibility Check</strong><span>Takes under 2 minutes</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-illustration" aria-hidden="true">
+          <svg viewBox="0 0 440 380" xmlns="http://www.w3.org/2000/svg" class="hero-svg">
+            <circle cx="220" cy="190" r="165" fill="#FFF7ED"/>
+            <circle cx="355" cy="75"  r="42"  fill="#FED7AA" opacity="0.45"/>
+            <circle cx="75"  cy="300" r="30"  fill="#FED7AA" opacity="0.35"/>
+            <rect x="150" y="100" width="140" height="100" rx="4" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
+            <polygon points="138,106 220,62 302,106" fill="#F97316"/>
+            <rect x="168" y="122" width="13" height="60" rx="2" fill="#FED7AA"/>
+            <rect x="192" y="122" width="13" height="60" rx="2" fill="#FED7AA"/>
+            <rect x="216" y="122" width="13" height="60" rx="2" fill="#FED7AA"/>
+            <rect x="240" y="122" width="13" height="60" rx="2" fill="#FED7AA"/>
+            <rect x="138" y="196" width="164" height="8" rx="2" fill="#E2E8F0"/>
+            <line x1="220" y1="62" x2="220" y2="40" stroke="#94A3B8" stroke-width="2"/>
+            <rect x="220" y="40" width="24" height="15" rx="2" fill="#F97316"/>
+            <path d="M72 248 Q220 170 368 248" fill="none" stroke="#F97316" stroke-width="2.5" stroke-dasharray="10 6" opacity="0.65"/>
+            <circle cx="72" cy="232" r="20" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
+            <circle cx="72" cy="223" r="8"  fill="#F97316" opacity="0.7"/>
+            <path d="M54 248 Q72 256 90 248" fill="#F97316" opacity="0.4"/>
+            <rect x="300" y="195" width="128" height="96" rx="10" fill="white" stroke="#E2E8F0" stroke-width="1.5" filter="url(#dropshadow)"/>
+            <rect x="300" y="195" width="128" height="6" rx="10" fill="#F97316"/>
+            <rect x="314" y="213" width="44" height="7"  rx="3" fill="#F97316" opacity="0.9"/>
+            <rect x="314" y="227" width="96" height="5"  rx="2" fill="#E2E8F0"/>
+            <rect x="314" y="237" width="80" height="5"  rx="2" fill="#E2E8F0"/>
+            <rect x="314" y="247" width="88" height="5"  rx="2" fill="#E2E8F0"/>
+            <rect x="314" y="260" width="58" height="22" rx="6" fill="#F97316"/>
+            <text x="343" y="275" text-anchor="middle" fill="white" font-size="8.5" font-family="Inter,sans-serif" font-weight="600">Apply →</text>
+            <circle cx="420" cy="198" r="14" fill="#16a34a"/>
+            <path d="M413 198 L418 203 L427 193" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <rect x="90"  y="158" width="76" height="26" rx="7" fill="white" stroke="#E2E8F0" stroke-width="1.2" filter="url(#dropshadow)"/>
+            <text x="128" y="175" text-anchor="middle" fill="#16a34a" font-size="9.5" font-family="Inter,sans-serif" font-weight="700">✓ Matched!</text>
+            <defs>
+              <filter id="dropshadow" x="-20%" y="-20%" width="150%" height="160%">
+                <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#00000018"/>
+              </filter>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         EXPLORE SCHEMES
+         ========================================================= -->
+    <section id="schemes" class="section schemes-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Government Schemes</span>
+          <h2 class="section-title">Explore Available Schemes</h2>
+          <p class="section-desc">Browse all government welfare schemes. Use the search bar and category filter to find what's relevant to you.</p>
+        </div>
+
+        <div class="schemes-controls">
+          <div class="search-wrapper">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="schemeSearch" class="search-input" placeholder="Search by scheme name or description…" autocomplete="off" aria-label="Search schemes" />
+          </div>
+          <div class="filter-pills" id="categoryFilters" role="group" aria-label="Filter by category">
+            <button class="pill pill-active" data-category="all">All Schemes</button>
+          </div>
+        </div>
+
+        <div class="state-box" id="schemesLoading">
+          <div class="spinner"></div>
+          <p>Loading schemes from server…</p>
+        </div>
+        <div class="state-box hidden" id="schemesError">
+          <div class="state-emoji">⚠️</div>
+          <h3>Could Not Load Schemes</h3>
+          <p>Make sure the backend server is running at <code>http://localhost:8080</code></p>
+          <button class="btn btn-primary" onclick="loadSchemes()">Retry</button>
+        </div>
+        <div class="schemes-grid" id="schemesGrid" role="list"></div>
+        <div class="state-box hidden" id="schemesEmpty">
+          <div class="state-emoji">🔍</div>
+          <p>No schemes match your search. Try different keywords or clear the filter.</p>
+          <button class="btn btn-outline" onclick="clearFilters()">Clear Filters</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         ELIGIBILITY FORM
+         ========================================================= -->
+    <section id="find" class="section form-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Eligibility Check</span>
+          <h2 class="section-title">Find Government Schemes<br>You're Eligible For</h2>
+          <p class="section-desc">Fill in your details below and we'll instantly match you with schemes you qualify for.</p>
+        </div>
+
+        <div class="form-card">
+          <form id="eligibilityForm" novalidate>
+            <div class="form-grid">
+
+              <div class="form-group">
+                <label class="form-label" for="name">Full Name <span class="required">*</span></label>
+                <input class="form-input" type="text" id="name" placeholder="e.g. Ravi Kumar" autocomplete="name" />
+                <span class="field-error" id="nameError" role="alert"></span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="age">Age <span class="required">*</span></label>
+                <input class="form-input" type="number" id="age" placeholder="e.g. 25" min="1" max="120" />
+                <span class="field-error" id="ageError" role="alert"></span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="state">State / Union Territory <span class="required">*</span></label>
+                <div class="select-wrapper">
+                  <select class="form-select" id="state">
+                    <option value="">Select your state</option>
+                    <optgroup label="── States ──">
+                      <option value="Andhra Pradesh">Andhra Pradesh</option>
+                      <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                      <option value="Assam">Assam</option>
+                      <option value="Bihar">Bihar</option>
+                      <option value="Chhattisgarh">Chhattisgarh</option>
+                      <option value="Goa">Goa</option>
+                      <option value="Gujarat">Gujarat</option>
+                      <option value="Haryana">Haryana</option>
+                      <option value="Himachal Pradesh">Himachal Pradesh</option>
+                      <option value="Jharkhand">Jharkhand</option>
+                      <option value="Karnataka">Karnataka</option>
+                      <option value="Kerala">Kerala</option>
+                      <option value="Madhya Pradesh">Madhya Pradesh</option>
+                      <option value="Maharashtra">Maharashtra</option>
+                      <option value="Manipur">Manipur</option>
+                      <option value="Meghalaya">Meghalaya</option>
+                      <option value="Mizoram">Mizoram</option>
+                      <option value="Nagaland">Nagaland</option>
+                      <option value="Odisha">Odisha</option>
+                      <option value="Punjab">Punjab</option>
+                      <option value="Rajasthan">Rajasthan</option>
+                      <option value="Sikkim">Sikkim</option>
+                      <option value="Tamil Nadu">Tamil Nadu</option>
+                      <option value="Telangana">Telangana</option>
+                      <option value="Tripura">Tripura</option>
+                      <option value="Uttar Pradesh">Uttar Pradesh</option>
+                      <option value="Uttarakhand">Uttarakhand</option>
+                      <option value="West Bengal">West Bengal</option>
+                    </optgroup>
+                    <optgroup label="── Union Territories ──">
+                      <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                      <option value="Chandigarh">Chandigarh</option>
+                      <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+                      <option value="Delhi">Delhi (NCT)</option>
+                      <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                      <option value="Ladakh">Ladakh</option>
+                      <option value="Lakshadweep">Lakshadweep</option>
+                      <option value="Puducherry">Puducherry</option>
+                    </optgroup>
+                  </select>
+                  <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <span class="field-error" id="stateError" role="alert"></span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="profession">Profession <span class="required">*</span></label>
+                <div class="select-wrapper">
+                  <select class="form-select" id="profession">
+                    <option value="">Select your profession</option>
+                    <option value="Farmer">Farmer</option>
+                    <option value="Student">Student</option>
+                    <option value="Business">Business / Self-Employed</option>
+                    <option value="Employed">Employed (Salaried)</option>
+                    <option value="Unemployed">Unemployed</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <span class="field-error" id="professionError" role="alert"></span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="income">Annual Family Income (₹) <span class="required">*</span></label>
+                <input class="form-input" type="number" id="income" placeholder="e.g. 150000" min="0" />
+                <span class="field-hint">Total yearly household income in Indian Rupees.</span>
+                <span class="field-error" id="incomeError" role="alert"></span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="educationLevel">Education Level <span class="required">*</span></label>
+                <div class="select-wrapper">
+                  <select class="form-select" id="educationLevel">
+                    <option value="">Select education level</option>
+                    <option value="Below 10th">Below 10th</option>
+                    <option value="10th Pass">10th Pass (SSC / Matriculation)</option>
+                    <option value="12th Pass">12th Pass (HSC / Intermediate)</option>
+                    <option value="Diploma">Diploma / ITI</option>
+                    <option value="Graduate">Graduate (B.A. / B.Sc. / B.Tech etc.)</option>
+                    <option value="Postgraduate">Postgraduate (M.A. / M.Sc. / M.Tech etc.)</option>
+                    <option value="Doctorate">Doctorate (Ph.D.)</option>
+                  </select>
+                  <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <span class="field-error" id="educationLevelError" role="alert"></span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="gender">Gender <span class="required">*</span></label>
+                <div class="select-wrapper">
+                  <select class="form-select" id="gender">
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <span class="field-error" id="genderError" role="alert"></span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="maritalStatus">Marital Status <span class="required">*</span></label>
+                <div class="select-wrapper">
+                  <select class="form-select" id="maritalStatus">
+                    <option value="">Select marital status</option>
+                    <option value="Married">Married</option>
+                    <option value="Unmarried">Unmarried</option>
+                  </select>
+                  <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <span class="field-error" id="maritalStatusError" role="alert"></span>
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                Find My Eligible Schemes
+              </button>
+              <button type="button" class="btn btn-ghost btn-lg" id="resetBtn">Clear Form</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         RESULTS SECTION  (hidden until form submitted)
+         ========================================================= -->
+    <section id="results" class="section results-section hidden" aria-live="polite">
+      <div class="container">
+        <div class="results-loading hidden" id="resultsLoading">
+          <div class="spinner spinner-lg"></div>
+          <h3>Checking your eligibility…</h3>
+          <p>Matching your profile with available government schemes</p>
+        </div>
+        <div class="hidden" id="resultsContent">
+          <div class="results-header">
+            <div>
+              <h2 id="resultsTitle" class="results-title"></h2>
+              <p  id="resultsSubtitle" class="results-subtitle"></p>
+            </div>
+            <button class="btn btn-outline" onclick="scrollTo('find')">Modify Search</button>
+          </div>
+          <div class="schemes-grid" id="resultsGrid" role="list"></div>
+        </div>
+        <div class="empty-results hidden" id="resultsEmpty">
+          <div class="state-emoji">🔍</div>
+          <h3>No Matching Schemes Found</h3>
+          <p>Based on your profile, no schemes matched at this time.</p>
+          <div class="empty-results-actions">
+            <a href="#schemes" class="btn btn-primary">Explore All Schemes</a>
+            <button class="btn btn-outline" onclick="scrollTo('find')">Try Again</button>
+          </div>
+        </div>
+        <div class="state-box hidden" id="resultsError">
+          <div class="state-emoji">⚠️</div>
+          <h3>Something Went Wrong</h3>
+          <p id="resultsErrorMsg"></p>
+          <p class="error-hint">Make sure the Java backend is running at <code>http://localhost:8080</code></p>
+          <button class="btn btn-primary" onclick="scrollTo('find')">Try Again</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         ABOUT SECTION
+         ========================================================= -->
+    <section id="about" class="section about-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">About Jansetu</span>
+          <h2 class="section-title">What is Jansetu?</h2>
+        </div>
+        <div class="about-grid">
+          <div class="about-text">
+            <p class="about-lead"><strong>Jansetu</strong> (जनसेतु) means <em>"Bridge for the People."</em> It is an eligibility-based government scheme recommendation system that connects Indian citizens to the welfare benefits they deserve.</p>
+            <p>Many eligible citizens miss out on government schemes simply because they are unaware of them. Jansetu solves this by asking a few simple questions about your profile and instantly matching you with schemes you qualify for.</p>
+            <p>Built as a B.Tech Computer Science project, demonstrating end-to-end full-stack development with Java backend, MySQL database, and a pure HTML/CSS/JS frontend.</p>
+          </div>
+          <div class="about-cards">
+            <div class="tech-card">
+              <h3>🛠️ Technologies Used</h3>
+              <div class="tech-tags">
+                <span class="tech-tag">HTML5</span>
+                <span class="tech-tag">CSS3</span>
+                <span class="tech-tag">JavaScript (ES6)</span>
+                <span class="tech-tag">Core Java</span>
+                <span class="tech-tag">JDBC</span>
+                <span class="tech-tag">MySQL</span>
+                <span class="tech-tag">Java HttpServer</span>
+              </div>
+            </div>
+            <div class="features-list">
+              <div class="feature-row"><span class="feature-check">✓</span><span>MySQL-backed registration &amp; login</span></div>
+              <div class="feature-row"><span class="feature-check">✓</span><span>HttpOnly session cookies — no token exposure</span></div>
+              <div class="feature-row"><span class="feature-check">✓</span><span>Profile-based eligibility matching</span></div>
+              <div class="feature-row"><span class="feature-check">✓</span><span>8+ real Indian government schemes</span></div>
+              <div class="feature-row"><span class="feature-check">✓</span><span>Responsive — works on all devices</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================
+       FOOTER
+       ========================================================= -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="#home" class="nav-logo footer-logo">
+            <svg width="30" height="30" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+              <rect width="34" height="34" rx="9" fill="#F97316"/>
+              <path d="M6 24 Q17 13 28 24" stroke="white" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+              <circle cx="17" cy="12" r="3.2" fill="white"/>
+              <rect x="8"  y="24.5" width="4" height="4" rx="1.5" fill="white" opacity="0.85"/>
+              <rect x="22" y="24.5" width="4" height="4" rx="1.5" fill="white" opacity="0.85"/>
+            </svg>
+            <span class="logo-text" style="color:#fff;">JANSETU</span>
+          </a>
+          <p class="footer-tagline">Bridging Citizens to Government Benefits</p>
+          <p class="footer-desc">A B.Tech Computer Science project — government scheme recommendation with MySQL-backed authentication.</p>
+        </div>
+        <div class="footer-links-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#schemes">Explore Schemes</a></li>
+            <li><a href="#find">Find My Schemes</a></li>
+            <li><a href="#about">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-links-col">
+          <h4>Official Portals</h4>
+          <ul>
+            <li><a href="https://www.india.gov.in"    target="_blank" rel="noopener">India.gov.in</a></li>
+            <li><a href="https://scholarships.gov.in" target="_blank" rel="noopener">Scholarships</a></li>
+            <li><a href="https://pmkisan.gov.in"      target="_blank" rel="noopener">PM-KISAN</a></li>
+            <li><a href="https://pmjay.gov.in"        target="_blank" rel="noopener">Ayushman Bharat</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 Jansetu. Built for educational purposes as a B.Tech Computer Science project.</p>
+        <p class="footer-disclaimer">⚠️ Scheme eligibility shown here is indicative. Always verify through <a href="https://www.india.gov.in" target="_blank" rel="noopener">official government portals</a>.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
