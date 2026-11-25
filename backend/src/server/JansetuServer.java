@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.Filter;
 
+import auth.AuthService;
 import dao.UserDAO;
 import dao.SchemeDAO;
 import model.User;
@@ -22,7 +23,6 @@ import java.util.regex.Pattern;
 
 public class JansetuServer {
 
-    // Only allow the local frontend origins used during development
     private static final Set<String> ALLOWED_ORIGINS = Set.of(
             "http://localhost:5500",
             "http://127.0.0.1:5500",
@@ -57,7 +57,43 @@ public class JansetuServer {
                 .replace("\r", "\\r");
     }
 
-    // Configure CORS for browser requests, including session cookies
+    // Extract the session token from the browser cookie.
+    private static String getSessionToken(HttpExchange exchange) {
+
+        String cookieHeader = exchange.getRequestHeaders()
+                .getFirst("Cookie");
+
+        if (cookieHeader == null) {
+            return null;
+        }
+
+        for (String cookie : cookieHeader.split(";")) {
+            String trimmed = cookie.trim();
+
+            if (trimmed.startsWith("JANSETU_SESSION=")) {
+                return trimmed.substring("JANSETU_SESSION=".length());
+            }
+        }
+
+        return null;
+    }
+
+    // Get the account ID from the current session.
+    // Returns 0 when the request is from a guest.
+    private static int getAuthenticatedAccountId(HttpExchange exchange) {
+
+        String token = getSessionToken(exchange);
+
+        if (token == null || token.isBlank()) {
+            return 0;
+        }
+
+        AuthService authService = new AuthService();
+
+        return authService.getAccountIdByToken(token);
+    }
+
+    // Configure CORS for frontend requests and session cookies.
     public static void configureCors(HttpContext context) {
 
         context.getFilters().add(new Filter() {
@@ -85,17 +121,17 @@ public class JansetuServer {
 
                     exchange.getResponseHeaders().set(
                             "Access-Control-Allow-Methods",
-                            "GET, POST, OPTIONS");
+                            "GET, POST, DELETE, OPTIONS");
 
                     exchange.getResponseHeaders().set(
-                            "Access-Control-Allow-Headers",
-                            "Content-Type");
+                            "Access-Control-Allow-Headers", "Content-Type");
 
-                    exchange.getResponseHeaders().set(
-                            "Vary", "Origin");
+                    exchange.getResponseHeaders().set("Vary", "Origin");
                 }
 
-                if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                if ("OPTIONS".equalsIgnoreCase(
+                        exchange.getRequestMethod())) {
+
                     exchange.sendResponseHeaders(204, -1);
                     exchange.close();
                     return;
@@ -114,7 +150,8 @@ public class JansetuServer {
         byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
 
         exchange.getResponseHeaders().set(
-                "Content-Type", "application/json; charset=UTF-8");
+                "Content-Type",
+                "application/json; charset=UTF-8");
 
         exchange.sendResponseHeaders(status, bytes.length);
 
@@ -124,6 +161,7 @@ public class JansetuServer {
     }
 
     private static String schemeToJson(Scheme scheme) {
+
         return "{"
                 + "\"schemeId\":" + scheme.getSchemeId() + ","
                 + "\"schemeName\":\"" + escape(scheme.getSchemeName()) + "\","
@@ -135,11 +173,14 @@ public class JansetuServer {
     }
 
     private static String schemesToJson(List<Scheme> schemes) {
+
         StringBuilder json = new StringBuilder("[");
 
         for (int i = 0; i < schemes.size(); i++) {
-            if (i > 0)
+            if (i > 0) {
                 json.append(",");
+            }
+
             json.append(schemeToJson(schemes.get(i)));
         }
 
@@ -150,105 +191,158 @@ public class JansetuServer {
     public static void main(String[] args) {
 
         try {
+
             HttpServer server = HttpServer.create(
                     new InetSocketAddress(8080), 0);
 
-            // GET: Return all schemes
-            HttpContext schemesContext = server.createContext("/api/schemes", exchange -> {
+            // =========================================
+            // 1. GET ALL GOVERNMENT SCHEMES
+            // =========================================
 
-                try {
-                    if (!exchange.getRequestMethod().equals("GET")) {
-                        sendResponse(exchange, 405,
-                                "{\"error\":\"Method not allowed\"}");
-                        return;
-                    }
+            HttpContext schemesContext = server.createContext(
+                    "/api/schemes", exchange -> {
 
-                    SchemeDAO schemeDAO = new SchemeDAO();
-                    List<Scheme> schemes = schemeDAO.getAllSchemes();
+                        try {
 
-                    sendResponse(exchange, 200,
-                            schemesToJson(schemes));
+                            if (!exchange.getRequestMethod().equals("GET")) {
+                                sendResponse(exchange, 405,
+                                        "{\"error\":\"Method not allowed\"}");
+                                return;
+                            }
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    sendResponse(exchange, 500,
-                            "{\"error\":\"Could not retrieve schemes\"}");
-                }
-            });
+                            SchemeDAO schemeDAO = new SchemeDAO();
+
+                            List<Scheme> schemes = schemeDAO.getAllSchemes();
+
+                            sendResponse(exchange, 200, schemesToJson(schemes));
+
+                        } catch (Exception e) {
+
+                            e.printStackTrace();
+
+                            sendResponse(exchange, 500,
+                                    "{\"error\":\"Could not retrieve schemes\"}");
+                        }
+                    });
 
             configureCors(schemesContext);
 
-            // POST: Save applicant and return recommendations
-            HttpContext recommendationsContext = server.createContext("/api/recommendations", exchange -> {
+            // =========================================
+            // 2. APPLICANT REGISTRATION & RECOMMENDATIONS
+            // =========================================
 
-                try {
-                    if (!exchange.getRequestMethod().equals("POST")) {
-                        sendResponse(exchange, 405,
-                                "{\"error\":\"Method not allowed\"}");
-                        return;
-                    }
+            HttpContext recommendationsContext = server.createContext(
+                    "/api/recommendations", exchange -> {
 
-                    String body;
+                        try {
 
-                    try (InputStream input = exchange.getRequestBody()) {
-                        body = new String(
-                                input.readAllBytes(),
-                                StandardCharsets.UTF_8);
-                    }
+                            if (!exchange.getRequestMethod().equals("POST")) {
+                                sendResponse(exchange, 405,
+                                        "{\"error\":\"Method not allowed\"}");
+                                return;
+                            }
 
-                    User user = new User(
-                            0,
-                            getValue(body, "name"),
-                            Integer.parseInt(getValue(body, "age")),
-                            getValue(body, "state"),
-                            getValue(body, "profession"),
-                            Double.parseDouble(getValue(body, "income")),
-                            getValue(body, "educationLevel"),
-                            getValue(body, "gender"),
-                            getValue(body, "maritalStatus"));
+                            String body;
 
-                    if (user.getAge() < 1 || user.getAge() > 120
-                            || !Double.isFinite(user.getIncome())
-                            || user.getIncome() < 0) {
+                            try (InputStream input = exchange.getRequestBody()) {
+                                body = new String(
+                                        input.readAllBytes(),
+                                        StandardCharsets.UTF_8);
+                            }
 
-                        sendResponse(exchange, 400,
-                                "{\"error\":\"Invalid age or income\"}");
-                        return;
-                    }
+                            User user = new User(
+                                    0,
+                                    getValue(body, "name"),
+                                    Integer.parseInt(getValue(body, "age")),
+                                    getValue(body, "state"),
+                                    getValue(body, "profession"),
+                                    Double.parseDouble(getValue(body, "income")),
+                                    getValue(body, "educationLevel"),
+                                    getValue(body, "gender"),
+                                    getValue(body, "maritalStatus"));
 
-                    UserDAO userDAO = new UserDAO();
+                            if (user.getAge() < 1
+                                    || user.getAge() > 120
+                                    || !Double.isFinite(user.getIncome())
+                                    || user.getIncome() < 0) {
 
-                    if (!userDAO.saveUser(user)) {
-                        sendResponse(exchange, 500,
-                                "{\"error\":\"Could not save applicant\"}");
-                        return;
-                    }
+                                sendResponse(exchange, 400,
+                                        "{\"error\":\"Invalid age or income\"}");
+                                return;
+                            }
 
-                    RecommendationService service = new RecommendationService();
+                            UserDAO userDAO = new UserDAO();
 
-                    List<Scheme> recommendations = service.getRecommendedSchemes(user);
+                            // Check whether this request belongs to a logged-in account.
+                            int accountId = getAuthenticatedAccountId(exchange);
 
-                    String response = "{\"message\":\"Applicant saved successfully\","
-                            + "\"recommendations\":"
-                            + schemesToJson(recommendations) + "}";
+                            boolean saved;
 
-                    sendResponse(exchange, 200, response);
+                            if (accountId > 0) {
 
-                } catch (IllegalArgumentException e) {
-                    sendResponse(exchange, 400,
-                            "{\"error\":\"" + escape(e.getMessage()) + "\"}");
+                                // Logged-in user: update their existing profile.
+                                saved = userDAO.saveOrUpdateUser(accountId, user);
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    sendResponse(exchange, 500,
-                            "{\"error\":\"Server error\"}");
-                }
-            });
+                            } else {
+
+                                // Guest user: save as an unlinked applicant.
+                                saved = userDAO.saveUser(user);
+                            }
+
+                            if (!saved) {
+                                sendResponse(exchange, 500,
+                                        "{\"error\":\"Could not save applicant\"}");
+                                return;
+                            }
+
+                            // Generate recommendations using the submitted profile.
+                            RecommendationService service = new RecommendationService();
+
+                            List<Scheme> recommendations = service.getRecommendedSchemes(user);
+
+                            String response = "{\"message\":\"Applicant saved successfully\","
+                                    + "\"recommendations\":"
+                                    + schemesToJson(recommendations) + "}";
+
+                            sendResponse(exchange, 200, response);
+
+                        } catch (IllegalArgumentException e) {
+
+                            sendResponse(exchange, 400,
+                                    "{\"error\":\"" + escape(e.getMessage()) + "\"}");
+
+                        } catch (Exception e) {
+
+                            e.printStackTrace();
+
+                            sendResponse(exchange, 500,
+                                    "{\"error\":\"Server error\"}");
+                        }
+                    });
 
             configureCors(recommendationsContext);
 
-            // Register authentication endpoints
+            // =========================================
+            // 3. AUTHENTICATION ROUTES
+            // =========================================
+
             AuthHandler.registerRoutes(server);
+
+            // =========================================
+            // 4. SAVED SCHEMES ROUTES
+            // =========================================
+
+            SavedSchemeHandler.registerRoutes(server);
+
+            // =========================================
+            // 5. USER PROFILE ROUTES
+            // =========================================
+
+            UserProfileHandler.registerRoutes(server);
+
+            // =========================================
+            // START SERVER
+            // =========================================
 
             server.setExecutor(null);
             server.start();
@@ -261,6 +355,8 @@ public class JansetuServer {
             System.out.println("Authentication: /api/auth/login");
             System.out.println("Authentication: /api/auth/logout");
             System.out.println("Authentication: /api/auth/me");
+            System.out.println("Saved Schemes: /api/saved-schemes");
+            System.out.println("User Profile: /api/profile");
             System.out.println("==================================");
 
         } catch (Exception e) {

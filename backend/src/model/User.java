@@ -4,6 +4,7 @@ package model;
 public class User {
 
     private int userId;
+    private int accountId;
     private String name;
     private int age;
     private String state;
@@ -17,7 +18,7 @@ public class User {
     public User() {
     }
 
-    // Parameterized constructor (full)
+    // Original full constructor
     public User(int userId, String name, int age, String state,
             String profession, double income,
             String educationLevel, String gender,
@@ -34,19 +35,31 @@ public class User {
         this.maritalStatus = maritalStatus;
     }
 
-    // 7-parameter constructor (defaults gender to "Other" and maritalStatus to "Unmarried")
+    // Original 7-parameter constructor
     public User(int userId, String name, int age, String state,
             String profession, double income,
             String educationLevel) {
-        this(userId, name, age, state, profession, income, educationLevel, "Other", "Unmarried");
+
+        this(userId, name, age, state, profession, income,
+                educationLevel, "Other", "Unmarried");
     }
 
+    // User ID getter and setter
     public int getUserId() {
         return userId;
     }
 
     public void setUserId(int userId) {
         this.userId = userId;
+    }
+
+    // Account ID getter and setter
+    public int getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(int accountId) {
+        this.accountId = accountId;
     }
 
     public String getName() {
@@ -117,6 +130,7 @@ public class User {
     public String toString() {
         return "User{" +
                 "userId=" + userId +
+                ", accountId=" + accountId +
                 ", name='" + name + '\'' +
                 ", age=" + age +
                 ", state='" + state + '\'' +

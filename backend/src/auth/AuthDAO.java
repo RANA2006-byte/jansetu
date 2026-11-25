@@ -93,6 +93,38 @@ public class AuthDAO {
         }
     }
 
+    // Retrieve account ID using a valid session token
+    public Integer getAccountIdByToken(String token) {
+
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+
+        String sql = """
+                SELECT account_id
+                FROM user_sessions
+                WHERE token_hash = ?
+                  AND expires_at > UTC_TIMESTAMP()
+                """;
+
+        try (Connection connection = DBConnection.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, hashToken(token));
+
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("account_id");
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
     // Hash session token before storing it
     private String hashToken(String token) {
         try {
@@ -137,7 +169,7 @@ public class AuthDAO {
 
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
-                    return new String[]{ rs.getString("full_name"), rs.getString("email") };
+                    return new String[] { rs.getString("full_name"), rs.getString("email") };
                 }
             }
 

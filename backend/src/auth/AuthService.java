@@ -133,6 +133,11 @@ public class AuthService {
         return authDAO.getAccountByToken(token);
     }
 
+    // Retrieve account ID using a valid session token
+    public Integer getAccountIdByToken(String token) {
+        return authDAO.getAccountIdByToken(token);
+    }
+
     // Logout
     public boolean logout(String token) {
         return authDAO.deleteSession(token);

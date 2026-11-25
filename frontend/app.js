@@ -37,11 +37,11 @@ const API_BASE = 'http://localhost:8080';
  * We only keep the user's display name & email (non-sensitive).
  */
 let currentUser = null;   // { fullName, email } or null when logged out
-
+let savedSchemes = [];
 /** Full list of schemes loaded from the API */
-let allSchemes      = [];
-let activeCategory  = 'all';
-let searchQuery     = '';
+let allSchemes = [];
+let activeCategory = 'all';
+let searchQuery = '';
 
 /* =================================================================
    2. DOM HELPERS
@@ -49,7 +49,7 @@ let searchQuery     = '';
 
 function show(id) { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); }
 function hide(id) { const el = document.getElementById(id); if (el) el.classList.add('hidden'); }
-function $(id)    { return document.getElementById(id); }
+function $(id) { return document.getElementById(id); }
 
 function scrollTo(sectionId) {
   const el = $(sectionId);
@@ -72,13 +72,15 @@ function escapeHtml(str) {
  * @param {{ fullName: string, email: string }} user
  */
 function showLoggedInNav(user) {
+
   currentUser = user;
+
 
   // Fill in profile display
   const initial = (user.fullName || '?').charAt(0).toUpperCase();
   $('profileAvatar').textContent = initial;
-  $('profileName').textContent   = user.fullName.split(' ')[0]; // first name only
-  $('dropdownName').textContent  = user.fullName;
+  $('profileName').textContent = user.fullName.split(' ')[0]; // first name only
+  $('dropdownName').textContent = user.fullName;
   $('dropdownEmail').textContent = user.email;
 
   // Swap nav areas
@@ -88,6 +90,8 @@ function showLoggedInNav(user) {
   // Mobile menu: hide login item, show logout item
   hide('mobileLoginItem');
   show('mobileLogoutItem');
+  show('savedSchemes');
+  loadSavedSchemes();
 }
 
 /** Switch navbar to the LOGGED-OUT (guest) state. */
@@ -102,6 +106,9 @@ function showGuestNav() {
   // Close profile dropdown if open
   $('profileDropdown').classList.remove('open');
   $('profileBtn').setAttribute('aria-expanded', 'false');
+  hide('savedSchemes');
+  savedSchemes = [];
+  $('savedSchemesGrid').innerHTML = '';
 }
 
 /* =================================================================
@@ -141,16 +148,16 @@ function showRegisterPanel() {
 /** Clear all auth form error/success messages */
 function clearAuthErrors() {
   ['loginError',
-   'registerError', 'registerSuccess',
-   'loginEmailError', 'loginPasswordError',
-   'regNameError', 'regEmailError', 'regPasswordError', 'regConfirmError'
+    'registerError', 'registerSuccess',
+    'loginEmailError', 'loginPasswordError',
+    'regNameError', 'regEmailError', 'regPasswordError', 'regConfirmError'
   ].forEach(id => {
     const el = $(id);
     if (el) { el.textContent = ''; el.classList.add('hidden'); }
   });
 
   // Remove input-error class
-  ['loginEmail','loginPassword','regName','regEmail','regPassword','regConfirm'].forEach(id => {
+  ['loginEmail', 'loginPassword', 'regName', 'regEmail', 'regPassword', 'regConfirm'].forEach(id => {
     const el = $(id);
     if (el) el.classList.remove('input-error');
   });
@@ -164,13 +171,13 @@ function setupPasswordToggles() {
   document.querySelectorAll('.password-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.dataset.target;
-      const input    = $(targetId);
+      const input = $(targetId);
       if (!input) return;
 
       const isPassword = input.type === 'password';
       input.type = isPassword ? 'text' : 'password';
 
-      btn.querySelector('.eye-show').classList.toggle('hidden',  isPassword);
+      btn.querySelector('.eye-show').classList.toggle('hidden', isPassword);
       btn.querySelector('.eye-hide').classList.toggle('hidden', !isPassword);
     });
   });
@@ -185,7 +192,7 @@ function setupPasswordToggles() {
 async function checkSession() {
   try {
     const response = await fetch(`${API_BASE}/api/auth/me`, {
-      method:      'GET',
+      method: 'GET',
       credentials: 'include',   // ← MUST include the session cookie
     });
 
@@ -217,7 +224,7 @@ async function checkSession() {
 function validateLoginForm() {
   let valid = true;
 
-  const email    = $('loginEmail').value.trim();
+  const email = $('loginEmail').value.trim();
   const password = $('loginPassword').value;
 
   if (!email) {
@@ -246,16 +253,16 @@ async function handleLoginSubmit(event) {
   if (!validateLoginForm()) return;
 
   const btn = $('loginSubmitBtn');
-  btn.disabled    = true;
+  btn.disabled = true;
   btn.textContent = 'Signing in…';
 
   try {
     const response = await fetch(`${API_BASE}/api/auth/login`, {
-      method:      'POST',
+      method: 'POST',
       credentials: 'include',           // cookie will be set by the backend
-      headers:     { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email:    $('loginEmail').value.trim().toLowerCase(),
+        email: $('loginEmail').value.trim().toLowerCase(),
         password: $('loginPassword').value,
       }),
     });
@@ -281,7 +288,7 @@ async function handleLoginSubmit(event) {
     errorEl.classList.remove('hidden');
     console.error('[Jansetu] Login error:', err);
   } finally {
-    btn.disabled    = false;
+    btn.disabled = false;
     btn.textContent = 'Sign In';
   }
 }
@@ -294,10 +301,10 @@ async function handleLoginSubmit(event) {
 function validateRegisterForm() {
   let valid = true;
 
-  const name     = $('regName').value.trim();
-  const email    = $('regEmail').value.trim();
+  const name = $('regName').value.trim();
+  const email = $('regEmail').value.trim();
   const password = $('regPassword').value;
-  const confirm  = $('regConfirm').value;
+  const confirm = $('regConfirm').value;
 
   if (!name || name.length < 2) {
     $('regNameError').textContent = 'Full name must be at least 2 characters.';
@@ -337,17 +344,17 @@ async function handleRegisterSubmit(event) {
   if (!validateRegisterForm()) return;
 
   const btn = $('registerSubmitBtn');
-  btn.disabled    = true;
+  btn.disabled = true;
   btn.textContent = 'Creating account…';
 
   try {
     const response = await fetch(`${API_BASE}/api/auth/register`, {
-      method:      'POST',
+      method: 'POST',
       credentials: 'include',
-      headers:     { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fullName: $('regName').value.trim(),
-        email:    $('regEmail').value.trim().toLowerCase(),
+        email: $('regEmail').value.trim().toLowerCase(),
         password: $('regPassword').value,
       }),
     });
@@ -373,7 +380,7 @@ async function handleRegisterSubmit(event) {
     errorEl.classList.remove('hidden');
     console.error('[Jansetu] Register error:', err);
   } finally {
-    btn.disabled    = false;
+    btn.disabled = false;
     btn.textContent = 'Create Account';
   }
 }
@@ -389,7 +396,7 @@ async function handleLogout() {
 
   try {
     await fetch(`${API_BASE}/api/auth/logout`, {
-      method:      'POST',
+      method: 'POST',
       credentials: 'include',  // sends the session cookie so backend can delete it
     });
   } catch (err) {
@@ -438,12 +445,12 @@ async function loadSchemes() {
 
 function getCategoryBadgeClass(category) {
   const map = {
-    'Agriculture':       'badge-Agriculture',
-    'Education':         'badge-Education',
-    'Health':            'badge-Health',
-    'Housing':           'badge-Housing',
-    'Business':          'badge-Business',
-    'Women Welfare':     'badge-Women-Welfare',
+    'Agriculture': 'badge-Agriculture',
+    'Education': 'badge-Education',
+    'Health': 'badge-Health',
+    'Housing': 'badge-Housing',
+    'Business': 'badge-Business',
+    'Women Welfare': 'badge-Women-Welfare',
     'Skill Development': 'badge-Skill-Development',
   };
   return map[category] || 'badge-default';
@@ -451,12 +458,12 @@ function getCategoryBadgeClass(category) {
 
 function getCategoryEmoji(category) {
   const map = {
-    'Agriculture':       '🌾',
-    'Education':         '🎓',
-    'Health':            '🏥',
-    'Housing':           '🏠',
-    'Business':          '💼',
-    'Women Welfare':     '👩',
+    'Agriculture': '🌾',
+    'Education': '🎓',
+    'Health': '🏥',
+    'Housing': '🏠',
+    'Business': '💼',
+    'Women Welfare': '👩',
     'Skill Development': '🛠️',
   };
   return map[category] || '📋';
@@ -464,9 +471,9 @@ function getCategoryEmoji(category) {
 
 function buildSchemeCard(scheme) {
   const badgeClass = getCategoryBadgeClass(scheme.category);
-  const emoji      = getCategoryEmoji(scheme.category);
-  const applyHref  = scheme.applicationLink ? escapeHtml(scheme.applicationLink) : '#';
-  const disabled   = !scheme.applicationLink ? 'style="pointer-events:none;opacity:.5;"' : '';
+  const emoji = getCategoryEmoji(scheme.category);
+  const applyHref = scheme.applicationLink ? escapeHtml(scheme.applicationLink) : '#';
+  const disabled = !scheme.applicationLink ? 'style="pointer-events:none;opacity:.5;"' : '';
 
   return `
     <article class="scheme-card" role="listitem">
@@ -479,6 +486,14 @@ function buildSchemeCard(scheme) {
         <div class="card-benefits-label">Benefits</div>
         ${escapeHtml(scheme.benefits)}
       </div>
+            <button
+        class="btn btn-outline save-scheme-btn"
+        data-scheme-id="${scheme.schemeId}"
+        type="button">
+        ${savedSchemes.some(s => s.schemeId === scheme.schemeId)
+      ? '❤️ Saved'
+      : '♡ Save Scheme'}
+      </button>
       <div class="card-footer">
         <a href="${applyHref}" target="_blank" rel="noopener noreferrer" class="btn-apply" ${disabled}>
           Apply Now
@@ -494,7 +509,106 @@ function buildSchemeCard(scheme) {
 function renderSchemeCards(schemes, gridId) {
   const grid = $(gridId);
   if (!grid) return;
-  grid.innerHTML = schemes.length === 0 ? '' : schemes.map(buildSchemeCard).join('');
+
+  grid.innerHTML = schemes.length === 0
+    ? ''
+    : schemes.map(buildSchemeCard).join('');
+
+  grid.querySelectorAll('.save-scheme-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const schemeId = Number(button.dataset.schemeId);
+      toggleSavedScheme(schemeId);
+    });
+  });
+}
+// Load saved schemes for the logged-in account
+async function loadSavedSchemes() {
+  if (!currentUser) return;
+
+  try {
+    const response = await fetch(`${API_BASE}/api/saved-schemes`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error('Could not load saved schemes');
+    }
+
+    savedSchemes = await response.json();
+
+    renderSavedSchemes();
+
+    // Refresh buttons in all existing scheme grids
+    renderSchemeCards(allSchemes, 'schemesGrid');
+
+  } catch (error) {
+    console.error('[Jansetu] Saved schemes error:', error);
+  }
+}
+
+
+// Save or remove a scheme
+async function toggleSavedScheme(schemeId) {
+  if (!currentUser) {
+    openModal('login');
+    return;
+  }
+
+  const alreadySaved = savedSchemes.some(
+    scheme => scheme.schemeId === schemeId
+  );
+
+  try {
+    const response = alreadySaved
+      ? await fetch(`${API_BASE}/api/saved-schemes/${schemeId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      : await fetch(`${API_BASE}/api/saved-schemes`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ schemeId: schemeId })
+      });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Operation failed');
+    }
+
+    await loadSavedSchemes();
+
+    // Refresh recommendation cards too, if present
+    const resultsGrid = $('resultsGrid');
+    if (resultsGrid && resultsGrid.children.length > 0) {
+      const resultCards = [...resultsGrid.querySelectorAll('.scheme-card')];
+      // Refreshing the current recommendations is handled below
+    }
+
+  } catch (error) {
+    console.error('[Jansetu] Save scheme error:', error);
+    alert(error.message);
+  }
+}
+
+
+// Display saved schemes
+function renderSavedSchemes() {
+  const grid = $('savedSchemesGrid');
+  const empty = $('savedSchemesEmpty');
+
+  if (!grid || !empty) return;
+
+  if (savedSchemes.length === 0) {
+    grid.innerHTML = '';
+    show('savedSchemesEmpty');
+  } else {
+    hide('savedSchemesEmpty');
+    renderSchemeCards(savedSchemes, 'savedSchemesGrid');
+  }
 }
 
 /* =================================================================
@@ -509,8 +623,8 @@ function buildCategoryFilters(schemes) {
 
   container.innerHTML = `<button class="pill pill-active" data-category="all">All Schemes</button>`
     + categories.map(cat =>
-        `<button class="pill" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`
-      ).join('');
+      `<button class="pill" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`
+    ).join('');
 
   container.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => handleCategoryFilter(btn));
@@ -531,7 +645,7 @@ function handleSearch() {
 
 function clearFilters() {
   $('schemeSearch').value = '';
-  searchQuery    = '';
+  searchQuery = '';
   activeCategory = 'all';
   document.querySelectorAll('#categoryFilters .pill').forEach(p => {
     p.classList.toggle('pill-active', p.dataset.category === 'all');
@@ -548,7 +662,7 @@ function applyFilters() {
     filtered = filtered.filter(s =>
       s.schemeName.toLowerCase().includes(searchQuery) ||
       (s.description && s.description.toLowerCase().includes(searchQuery)) ||
-      (s.benefits    && s.benefits.toLowerCase().includes(searchQuery))
+      (s.benefits && s.benefits.toLowerCase().includes(searchQuery))
     );
   }
   if (filtered.length === 0) {
@@ -569,11 +683,11 @@ function validateEligibilityForm() {
   let valid = true;
 
   // Clear previous errors
-  ['nameError','ageError','stateError','professionError',
-   'incomeError','educationLevelError','genderError','maritalStatusError'].forEach(id => {
-    const el = $(id); if (el) el.textContent = '';
-  });
-  ['name','age','state','profession','income','educationLevel','gender','maritalStatus'].forEach(id => {
+  ['nameError', 'ageError', 'stateError', 'professionError',
+    'incomeError', 'educationLevelError', 'genderError', 'maritalStatusError'].forEach(id => {
+      const el = $(id); if (el) el.textContent = '';
+    });
+  ['name', 'age', 'state', 'profession', 'income', 'educationLevel', 'gender', 'maritalStatus'].forEach(id => {
     const el = $(id); if (el) el.classList.remove('input-error');
   });
 
@@ -585,24 +699,24 @@ function validateEligibilityForm() {
   }
 
   const name = $('name').value.trim();
-  if (!name || name.length < 2)         setErr('name',           'nameError',           'Full name is required (min 2 characters).');
+  if (!name || name.length < 2) setErr('name', 'nameError', 'Full name is required (min 2 characters).');
 
   const ageVal = $('age').value;
-  const age    = parseInt(ageVal, 10);
-  if (!ageVal)                           setErr('age',            'ageError',            'Age is required.');
-  else if (isNaN(age) || age < 1 || age > 120) setErr('age',     'ageError',            'Enter a valid age between 1 and 120.');
+  const age = parseInt(ageVal, 10);
+  if (!ageVal) setErr('age', 'ageError', 'Age is required.');
+  else if (isNaN(age) || age < 1 || age > 120) setErr('age', 'ageError', 'Enter a valid age between 1 and 120.');
 
-  if (!$('state').value)                 setErr('state',          'stateError',          'Please select your state.');
-  if (!$('profession').value)            setErr('profession',     'professionError',     'Please select your profession.');
+  if (!$('state').value) setErr('state', 'stateError', 'Please select your state.');
+  if (!$('profession').value) setErr('profession', 'professionError', 'Please select your profession.');
 
   const incomeVal = $('income').value;
-  const income    = parseFloat(incomeVal);
-  if (incomeVal === '')                  setErr('income',         'incomeError',         'Annual income is required.');
-  else if (isNaN(income) || income < 0) setErr('income',         'incomeError',         'Enter a valid non-negative income amount.');
+  const income = parseFloat(incomeVal);
+  if (incomeVal === '') setErr('income', 'incomeError', 'Annual income is required.');
+  else if (isNaN(income) || income < 0) setErr('income', 'incomeError', 'Enter a valid non-negative income amount.');
 
-  if (!$('educationLevel').value)        setErr('educationLevel', 'educationLevelError', 'Please select your education level.');
-  if (!$('gender').value)                setErr('gender',         'genderError',         'Please select your gender.');
-  if (!$('maritalStatus').value)         setErr('maritalStatus',  'maritalStatusError',  'Please select your marital status.');
+  if (!$('educationLevel').value) setErr('educationLevel', 'educationLevelError', 'Please select your education level.');
+  if (!$('gender').value) setErr('gender', 'genderError', 'Please select your gender.');
+  if (!$('maritalStatus').value) setErr('maritalStatus', 'maritalStatusError', 'Please select your marital status.');
 
   return valid;
 }
@@ -618,14 +732,14 @@ async function handleEligibilitySubmit(event) {
 
   // Build the payload — age & income must be numbers, not strings
   const payload = {
-    name:           $('name').value.trim(),
-    age:            parseInt($('age').value, 10),
-    state:          $('state').value,
-    profession:     $('profession').value,
-    income:         parseFloat($('income').value),
+    name: $('name').value.trim(),
+    age: parseInt($('age').value, 10),
+    state: $('state').value,
+    profession: $('profession').value,
+    income: parseFloat($('income').value),
     educationLevel: $('educationLevel').value,
-    gender:         $('gender').value,
-    maritalStatus:  $('maritalStatus').value,
+    gender: $('gender').value,
+    maritalStatus: $('maritalStatus').value,
   };
 
   console.log('[Jansetu] Sending recommendation request:', payload);
@@ -644,10 +758,10 @@ async function handleEligibilitySubmit(event) {
 
   try {
     const response = await fetch(`${API_BASE}/api/recommendations`, {
-      method:      'POST',
+      method: 'POST',
       credentials: 'include',
-      headers:     { 'Content-Type': 'application/json' },
-      body:        JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) throw new Error(`Server error: HTTP ${response.status}`);
@@ -682,11 +796,11 @@ async function handleEligibilitySubmit(event) {
 
 function resetEligibilityForm() {
   $('eligibilityForm').reset();
-  ['nameError','ageError','stateError','professionError',
-   'incomeError','educationLevelError','genderError','maritalStatusError'].forEach(id => {
-    const el = $(id); if (el) el.textContent = '';
-  });
-  ['name','age','state','profession','income','educationLevel','gender','maritalStatus'].forEach(id => {
+  ['nameError', 'ageError', 'stateError', 'professionError',
+    'incomeError', 'educationLevelError', 'genderError', 'maritalStatusError'].forEach(id => {
+      const el = $(id); if (el) el.textContent = '';
+    });
+  ['name', 'age', 'state', 'profession', 'income', 'educationLevel', 'gender', 'maritalStatus'].forEach(id => {
     const el = $(id); if (el) el.classList.remove('input-error');
   });
   hide('results');
@@ -698,7 +812,7 @@ function resetEligibilityForm() {
 
 function displayResults(recommendations, name) {
   const count = recommendations.length;
-  $('resultsTitle').textContent    = `${count} Scheme${count !== 1 ? 's' : ''} Found for ${name}`;
+  $('resultsTitle').textContent = `${count} Scheme${count !== 1 ? 's' : ''} Found for ${name}`;
   $('resultsSubtitle').textContent = `Based on your profile, you are eligible for the following ${count === 1 ? 'scheme' : 'schemes'}.`;
   renderSchemeCards(recommendations, 'resultsGrid');
   show('resultsContent');
@@ -745,7 +859,7 @@ function closeMobileMenu() {
 }
 
 function setupMobileMenu() {
-  const hamburger  = $('hamburger');
+  const hamburger = $('hamburger');
   const mobileMenu = $('mobileMenu');
   if (!hamburger || !mobileMenu) return;
 
@@ -793,7 +907,7 @@ function init() {
   $('mobileLoginBtn')?.addEventListener('click', () => { closeMobileMenu(); openModal('login'); });
   $('modalClose')?.addEventListener('click', closeModal);
   $('switchToRegister')?.addEventListener('click', () => { clearAuthErrors(); showRegisterPanel(); });
-  $('switchToLogin')?.addEventListener('click',    () => { clearAuthErrors(); showLoginPanel(); });
+  $('switchToLogin')?.addEventListener('click', () => { clearAuthErrors(); showLoginPanel(); });
 
   // Close modal when clicking the dark overlay (outside the card)
   $('authModal')?.addEventListener('click', e => { if (e.target === $('authModal')) closeModal(); });
@@ -809,7 +923,7 @@ function init() {
   $('profileBtn')?.addEventListener('click', e => {
     e.stopPropagation();
     const dropdown = $('profileDropdown');
-    const isOpen   = dropdown.classList.toggle('open');
+    const isOpen = dropdown.classList.toggle('open');
     $('profileBtn').setAttribute('aria-expanded', String(isOpen));
   });
   // Close dropdown when clicking outside
